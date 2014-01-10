@@ -260,8 +260,7 @@ compile =
     let (imodule, _, _) = ir
     let failSpanList = foldMapIR gt1 imodule
     when ((afm $ args env) && failSpanList/="") $ throwErr (ClaferErr $ ("The model is not an attributed feature model .\nThe following places contain cardinality larger than 1:\n"++) $ failSpanList :: ClaferSErr)
-
-    let env' = env{ cIr = Just ir, irModuleTrace = traceIrModule imodule }
+    let env' = env{ cIr = Just ir, irModuleTrace = traceIrModule imodule } 
     putEnv env'
     when (debug') $ takeSnapShot env' Compiled
     where
@@ -272,7 +271,7 @@ compile =
       isKeyWord (IRClafer IClafer{cinPos = (PosSpan _ (PosPos _ l c) _) ,ident=i}) = if (i `elem` keyWords) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
       isKeyWord _ = ""
       gt1 :: Ir -> String
-      gt1 (IRClafer (IClafer _ (Span (Pos l c) _) False _ _ _ _  _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
+      gt1 (IRClafer (IClafer _ (Span (Pos l c) _) False _ _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
       gt1 (IRClafer (IClafer _ (Span (PosPos _ l c) _) False _ _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else "" 
       gt1 (IRClafer (IClafer _ (PosSpan _ (Pos l c) _) False _ _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
       gt1 (IRClafer (IClafer _ (PosSpan _ (PosPos _ l c) _) False _ _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
