@@ -42,8 +42,7 @@ import Language.Clafer.Intermediate.ResolverName
 import Prelude hiding (exp)
 
 
--- -----------------------------------------------------------------------------
--- Non-overlapping inheritance
+-- | Resolve Non-overlapping inheritance
 resolveNModule :: (IModule, GEnv) -> Resolve (IModule, GEnv)
 resolveNModule (imodule, genv') =
   do
@@ -120,9 +119,7 @@ resolveN claf pos' declarations id' =
           in if (p3==Nothing) then False else
             recursiveCheck (fromJust p3) p2 clafs
 
--- -----------------------------------------------------------------------------
--- Overlapping inheritance
-
+-- | Resolve overlapping inheritance
 resolveOModule :: (IModule, GEnv) -> Resolve (IModule, GEnv)
 resolveOModule (imodule, genv') =
   do
@@ -158,9 +155,8 @@ resolveOElement env x = case x of
   IEConstraint _ _ _ -> return x
   IEGoal _ _ _ -> return x
   
--- -----------------------------------------------------------------------------
--- inherited and default cardinalities
 
+-- | Resolve inherited and default cardinalities
 analyzeModule :: (IModule, GEnv) -> IModule
 analyzeModule (imodule, genv') =
   imodule{mDecls = map (analyzeElement (defSEnv genv' decls')) decls'}
@@ -210,8 +206,7 @@ analyzeElement env x = case x of
   IEConstraint _ _ _ -> x
   IEGoal _ _ _ -> x
 
--- -----------------------------------------------------------------------------
--- Expand inheritance
+-- | Expand inheritance
 resolveEModule :: (IModule, GEnv) -> (IModule, GEnv)
 resolveEModule (imodule, genv') = (imodule{mDecls = decls''}, genv'')
   where
@@ -278,15 +273,14 @@ renameClafer True  clafer = renameClafer' clafer
 
 renameClafer' :: MonadState GEnv m => IClafer -> m IClafer
 renameClafer' clafer = do
-  uid' <- genId $ ident clafer
-  return $ clafer {uid = uid'}
+  let claferIdent = ident clafer 
+  identCountMap' <- gets identCountMap
+  let count = Map.findWithDefault 0 claferIdent identCountMap'
+  modify (\e -> e { identCountMap = Map.alter (\_ -> Just (count+1)) claferIdent identCountMap' } )
+  return $ clafer { uid = genId claferIdent count }
 
-
-genId :: MonadState GEnv m => String -> m String
-genId id' = do
-  modify (\e -> e {num = 1 + num e})
-  n <- gets num
-  return $ concat ["c", show n, "_",  id']
+genId :: String -> Int -> String
+genId id' count = concat ["c", show count, "_",  id']
 
 resolveEInheritance :: MonadState GEnv m => [String] -> [String] -> Bool -> [IElement] -> [IClafer]  -> m ([IElement], ISuper, [IClafer])
 resolveEInheritance predecessors unrollables absAncestor declarations allSuper

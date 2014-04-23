@@ -71,18 +71,33 @@ test:
 	cabal test	
 	$(MAKE) -C $(TEST_DIR) test
 
+validateAlloy:
+	$(MAKE) -C $(TEST_DIR) validateAlloy
+
+validateXML:	
+	$(MAKE) -C $(TEST_DIR) validateXML
+
+validateClafer:
+#	$(MAKE) -C $(TEST_DIR) validateClafer
+
+generatePython:
+	$(MAKE) -C $(TEST_DIR) generatePython
+
+diffRegressions:
+	$(MAKE) -C $(TEST_DIR) diffRegressions
+
 reg:
 	$(MAKE) -C $(TEST_DIR) reg
-
-newVersion:
-	$(MAKE) -C $(SRC_DIR) newVersion
 
 clean:
 	rm -f clafer
 	rm -rf dist
-	$(MAKE) -C $(TEST_DIR) clean
 	$(MAKE) -C $(SRC_DIR) clean
 	$(MAKE) -C $(TOOL_DIR) clean
 	find . -type f -name '*.o' -print0 | xargs -0 rm -f
 	find . -type f -name '*.hi' -print0 | xargs -0 rm -f
 	find . -type f -name '*~' -print0 | xargs -0 rm -f
+	$(MAKE) cleanTest
+
+cleanTest:
+	$(MAKE) -C $(TEST_DIR) clean

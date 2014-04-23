@@ -20,6 +20,9 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 -}
+{- | Transforms an Abstract Syntax Tree (AST) from "Language.Clafer.Front.Absclafer" 
+into Intermediate representation (IR) from "Language.Clafer.Intermediate.Intclafer" of a Clafer model.
+-}
 module Language.Clafer.Intermediate.Desugarer where
 
 import Data.List
@@ -30,7 +33,7 @@ import Language.Clafer.Front.Absclafer
 import Language.Clafer.Front.Mapper
 import Language.Clafer.Intermediate.Intclafer
 
-
+-- | Transform the AST into the intermediate representation (IR)
 desugarModule :: Module -> IModule
 desugarModule (Module declarations) = desugarModule $ PosModule noSpan declarations
 desugarModule (PosModule _ declarations) = IModule "" $
@@ -40,7 +43,7 @@ desugarModule (PosModule _ declarations) = IModule "" $
 sugarModule :: IModule -> Module
 sugarModule x = Module $ map sugarDeclaration $ mDecls x -- (fragments x >>= mDecls)
 
--- desugars enumeration to abstract and global singleton features
+-- | desugars enumeration to abstract and global singleton features
 desugarEnums :: Declaration -> [Declaration]
 desugarEnums (EnumDecl id' enumids) = desugarEnums $ PosEnumDecl noSpan id' enumids
 desugarEnums (PosEnumDecl _ id' enumids) = absEnum : map mkEnum enumids

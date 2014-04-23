@@ -19,6 +19,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 -}
+-- | Generates a XML representation of IR conforming to the ClaferIR.xsd.
 module Language.Clafer.Generator.Xml where
 
 -- import Text.XML.HaXml.XmlContent.Haskell hiding (Result)
@@ -56,6 +57,7 @@ genXmlIntPair (x, y) = concat
   [ genXmlInteger x
   , genXmlInteger y]
 
+-- | Generate an XML representation of the IR
 genXmlModule :: IModule -> Result
 genXmlModule imodule = concat
   [ "<?xml version=\"1.0\"?>"

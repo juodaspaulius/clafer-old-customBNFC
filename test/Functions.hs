@@ -22,6 +22,8 @@
 module Functions where
 
 import qualified Data.List as List
+import qualified Data.Map as Map
+import Data.Maybe
 import Language.Clafer
 import System.Directory
 
@@ -38,9 +40,9 @@ checkClaferExt file' = if ((eman == "")) then False else (txe == "rfc") && (take
 	where (txe, eman) = span (/='.') (reverse file')
 
 				
-compileOneFragment :: ClaferArgs -> InputModel -> Either [ClaferErr] CompilerResult
+compileOneFragment :: ClaferArgs -> InputModel -> Either [ClaferErr] (Map.Map ClaferMode CompilerResult)
 compileOneFragment args' model =
- 	runClafer args' $
+ 	runClafer args' $  
 		do
 			addModuleFragment model
 			parse
@@ -62,6 +64,10 @@ fromRight (Left _) = error "Function fromLeft expects argument of the form 'Righ
 andMap :: (a -> Bool) -> [a] -> Bool
 andMap f lst = and $ map f lst
 
-getIR :: (String, Either [ClaferErr] CompilerResult) -> [(String, IModule)]
-getIR (file', (Right (CompilerResult{claferEnv = ClaferEnv{cIr = Just (iMod, _, _)}}))) = [(file', iMod)]
-getIR _ = []
+
+getIR (file', (Right (resultMap))) = 
+	let
+		CompilerResult{claferEnv = ClaferEnv{cIr = Just (iMod, _, _)}} = fromJust $ Map.lookup Alloy resultMap
+	in
+		[(file', iMod)]
+getIR (_, _) = []

@@ -1,6 +1,10 @@
 {-# LANGUAGE DeriveDataTypeable, RankNTypes, KindSignatures, FlexibleContexts #-}
 {-
+<<<<<<< HEAD
  Copyright (C) 2012 Kacper Bak, Jimmy Liang, Luke Brown <http://gsd.uwaterloo.ca>
+=======
+ Copyright (C) 2012-2014 Kacper Bak, Jimmy Liang <http://gsd.uwaterloo.ca>
+>>>>>>> master
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of
  this software and associated documentation files (the "Software"), to deal in
@@ -342,8 +346,9 @@ isPrimitive :: String -> Bool
 isPrimitive = flip elem primitiveTypes
 
 data GEnv = GEnv {
-  num :: Int,
-  stable :: Map.Map String [[String]], -- super clafer names of a given clafer
+  identCountMap :: Map.Map String Int,
+  expCount :: Int,
+  stable :: Map.Map UID [[UID]], -- super clafer names of a given clafer
   sClafers ::[IClafer] -- all clafers (no going through references)
   } deriving (Eq, Show)
 

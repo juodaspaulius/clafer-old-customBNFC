@@ -20,6 +20,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 -}
+-- | Resolves indentation into explicit nesting using { }
 module Language.Clafer.Front.LayoutResolver where
 
 -- very simple layout resolver
@@ -40,14 +41,14 @@ data LayEnv = LayEnv {
     } deriving Show
 
 
--- ident level of new line, current level or parenthesis
+-- | ident level of new line, current level or parenthesis
 type LastNl = (Int, Int)
 
 type Position = Posn
 
 data ExToken = NewLine LastNl | ExToken Token deriving Show
 
--- ident level stack, last new line
+-- | ident level stack, last new line
 data LEnv = LEnv [Int] (Maybe LastNl)
 
 getToken :: (Monad m) => ExToken -> ClaferT m Token
@@ -107,8 +108,8 @@ isNewLine :: Token -> Token -> Bool
 isNewLine t1 t2 = line t1 < line t2
 
 -- | Add to the global and column positions of a token.
---   The column position is only changed if the token is on
---   the same line as the given position.
+-- | The column position is only changed if the token is on
+-- | the same line as the given position.
 incrGlobal :: (Monad m) => Position -- ^ If the token is on the same line
                        --   as this position, update the column position.
            -> Int      -- ^ Number of characters to add to the position.

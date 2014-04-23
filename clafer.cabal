@@ -1,22 +1,26 @@
 Name:                clafer
 Version:             0.4.0
-Synopsis:            clafer compiles Clafer models to other formats, such as Alloy, XML, HTML, Dot.
-Description:         Clafer is a general purpose, lightweight, structural modeling language developed at GSD Lab, University of Waterloo. Lightweight modeling aims at improving the understanding of the problem domain in the early stages of software development and determining the requirements with fewer defects. Clafer's goal is to make modeling more accessible to a wider range of users and domains. The tool provides a reference language implementation. It translates models to other formats (e.g. Alloy, XML) to allow for reasoning with existing tools.
+Synopsis:           clafer compiles Clafer models to other formats, such as Alloy, XML, HTML, Dot.
+Description:        Clafer is a general purpose, lightweight, structural modeling language developed at GSD Lab, University of Waterloo. Lightweight modeling aims at improving the understanding of the problem domain in the early stages of software development and determining the requirements with fewer defects. Clafer's goal is to make modeling more accessible to a wider range of users and domains. The tool provides a reference language implementation. It translates models to other formats (e.g. Alloy, XML) to allow for reasoning with existing tools.
 Homepage:           http://clafer.org
 License:            MIT
 License-file:       LICENSE
-Author:             Kacper Bak, Jimmy Liang, Michal Antkiewicz, Chris Walker, Luke Michael Brown
-Maintainer:         kbak@gsd.uwaterloo.ca
+Author:             Kacper Bąk, Jimmy Liang, Michał Antkiewicz, Chris Walker, Luke Michael Brown
+Maintainer:         Michał Antkiewicz <mantkiew@gsd.uwaterloo.ca>
 Stability:          Experimental
 Category:           Model
 Build-type:         Simple
 Cabal-version:      >= 1.16
-Extra-Source-Files:
+data-files:         README.md,
                     CHANGES.md,
-                    LICENSE,
-                    tools/alloy4.jar,
-                    tools/alloy4.2.jar,
-                    tools/XsdCheck.class
+                    logo.pdf,
+                    IDEs/clafer-README.md,
+                    IDEs/sublime-text-2/Packages/User/clafer.sublime-build
+                    Makefile,
+                    tools/XsdCheck.java,
+                    tools/XsdCheck.class,
+                    tools/ecore2clafer.jar,
+                    tools/Makefile
 source-repository head
     type:           git
     location:       git://github.com/gsdlab/clafer.git
@@ -41,11 +45,15 @@ Executable clafer
                     QuickCheck >= 2.5.1.1, 
                     transformers >= 0.3.0.0,
 
+                    data-stringmap >= 0.9.1,
+                    json-builder >= 0.3,
+                    string-conversions >= 0.3,
                     cmdargs >= 0.10.5, 
                     executable-path >= 0.0.3, 
                     glpk-hs >= 0.3.4,
                     HaXml >= 1.24,
                     MaybeT >= 0.1.2,
+                    split >= 0.2.2, 
                     test-framework >= 0.8, 
                     test-framework-hunit >= 0.3.0, 
                     test-framework-quickcheck2 >= 0.3.0.1,
@@ -53,6 +61,7 @@ Executable clafer
 
                     clafer == 0.4.0
     hs-source-dirs: src
+    other-modules: Paths_clafer
 
 library 
     build-tools:    ghc >= 7.6.3
@@ -74,11 +83,15 @@ library
                     QuickCheck >= 2.5.1.1, 
                     transformers >= 0.3.0.0,
 
+                    data-stringmap >= 0.9.1,
+                    json-builder >= 0.3,
+                    string-conversions >= 0.3,
                     cmdargs >= 0.10.5, 
                     executable-path >= 0.0.3, 
                     glpk-hs >= 0.3.4,
                     HaXml >= 1.24,
                     MaybeT >= 0.1.2,
+                    split >= 0.2.2, 
                     test-framework >= 0.8, 
                     test-framework-hunit >= 0.3.0, 
                     test-framework-quickcheck2 >= 0.3.0.1,
@@ -92,6 +105,8 @@ library
                      Language.Clafer.Comments,
                      Language.Clafer.Common,
                      Language.Clafer.Css,
+                     Language.Clafer.JSONMetaData,
+                     Language.Clafer.QNameUID,
                      Language.Clafer.Front.Absclafer,
                      Language.Clafer.Front.ErrM,
                      Language.Clafer.Front.LayoutResolver,
@@ -100,8 +115,10 @@ library
                      Language.Clafer.Front.Parclafer,
                      Language.Clafer.Front.Printclafer,
                      Language.Clafer.Generator.Alloy,
+                     Language.Clafer.Generator.Choco,
                      Language.Clafer.Generator.Graph,
                      Language.Clafer.Generator.Html,
+                     Language.Clafer.Generator.Python,
                      Language.Clafer.Generator.Schema,
                      Language.Clafer.Generator.Stats,
                      Language.Clafer.Generator.Xml,
@@ -119,10 +136,8 @@ library
                      Language.Clafer.Intermediate.Tracing,
                      Language.Clafer.Intermediate.Transformer,
                      Language.Clafer.Optimizer.Optimizer,
-                     Language.Clafer.SplitJoin,
-                     Language.Clafer.Version
-                     
-
+                     Language.Clafer.SplitJoin
+    other-modules: Paths_clafer
 Test-Suite test-suite
     build-tools:    ghc >= 7.6.3
     default-language: 
@@ -144,21 +159,24 @@ Test-Suite test-suite
                     QuickCheck >= 2.5.1.1, 
                     transformers >= 0.3.0.0,
 
+                    data-stringmap >= 0.9.1,
+                    json-builder >= 0.3,
+                    string-conversions >= 0.3,
                     cmdargs >= 0.10.5, 
                     executable-path >= 0.0.3, 
                     glpk-hs >= 0.3.4,
                     HaXml >= 1.24,
                     MaybeT >= 0.1.2,
+                    split >= 0.2.2, 
                     test-framework >= 0.8, 
                     test-framework-hunit >= 0.3.0, 
                     test-framework-quickcheck2 >= 0.3.0.1,
                     test-framework-th >= 0.2.4,
 
                     clafer == 0.4.0
+    ghc-options:     -Wall -fno-warn-unused-do-bind -fno-warn-orphans
 
-    ghc-options     -Wall -fno-warn-unused-do-bind -fno-warn-orphans
-
-    other-modules:
+    other-modules:  Paths_clafer,
                     Functions,
                     Suite.Example,
                     Suite.Positive,

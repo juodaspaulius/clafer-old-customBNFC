@@ -1,5 +1,5 @@
 {-
- Copyright (C) 2012 Kacper Bak, Jimmy Liang, Luke Brown <http://gsd.uwaterloo.ca>
+ Copyright (C) 2012-2014 Kacper Bak, Jimmy Liang, Luke Michael Brown <http://gsd.uwaterloo.ca>
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of
  this software and associated documentation files (the "Software"), to deal in
@@ -19,6 +19,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 -}
+-- | Intermediate representation (IR) of a Clafer model
 module Language.Clafer.Intermediate.Intclafer where
 
 import Language.Clafer.Front.Absclafer
@@ -27,6 +28,12 @@ import Data.Maybe
 import Data.Monoid
 import Data.Foldable (foldMap)
 
+-- | unique identifier of a clafer
+type UID = String    
+-- | clafer name as declared in the source model
+type CName = String  
+
+-- | A "supertype" of all IR types
 data Ir =
   IRIModule IModule | 
   IRIElement IElement |
@@ -48,27 +55,39 @@ data IType = TBoolean
            | TClafer [String]
   deriving (Eq,Ord,Show)
 
--- each file contains exactly one mode. A module is a list of declarations
+-- | each file contains exactly one mode. A module is a list of declarations
 data IModule = IModule {
-      mName :: String,    -- always empty for now because we don't have syntax for declaring modules
+      -- | always empty for now because we don't have syntax for declaring modules
+      mName :: String,    
+      -- | List of top-level elements
       mDecls :: [IElement]
     }
   deriving (Eq,Ord,Show)
 
--- Clafer has a list of fields that specify its properties. Some fields, marked as (o) are for generating optimized code
+-- | Clafer has a list of fields that specify its properties. Some fields, marked as (o) are for generating optimized code
 data IClafer =
    IClafer {
       claferParent :: Maybe IClafer,  -- Nothing => TopLevel, Just x => x is the parent of this clafer
-      cinPos :: Span,                 -- the position of the syntax in source code
-      isAbstract :: Bool,             -- whether abstract or not (i.e., concrete)
-      gcard :: Maybe IGCard,          -- group cardinality
-      ident :: String,                -- name
-      uid :: String,                  -- (o) unique identifier
-      super :: ISuper,                -- superclafers
-      reference :: IReference,        -- refrence types
-      card :: Maybe Interval,         -- clafer cardinality
-      glCard :: Interval,             -- (o) global cardinality
-      elements :: [IElement]          -- nested declarations
+      -- | the position of the syntax in source code
+      cinPos :: Span,         
+      -- | whether abstract or not (i.e., concrete)
+      isAbstract :: Bool,     
+      -- | group cardinality
+      gcard :: Maybe IGCard,  
+      -- | name declared in the model
+      ident :: CName,         
+      -- | a unique identifier
+      uid :: UID,             
+      -- | superclafers
+      super:: ISuper,         
+      -- | refrence types
+      reference :: IReference,        
+      -- | clafer cardinality
+      card :: Maybe Interval,
+       -- | (o) global cardinality 
+      glCard :: Interval,    
+      -- | nested elements
+      elements :: [IElement]  
     }
 
 data IClaferInstance =                                          -- IClafer without the Parent,
@@ -95,19 +114,26 @@ instance Show IClafer where
                 " elements = " ++ show es
 
 
--- Clafer's subelement is either a clafer, a constraint, or a goal (objective)
--- This is a wrapper type needed to have polymorphic lists of elements
+-- | Clafer's subelement is either a clafer, a constraint, or a goal (objective)
+--   This is a wrapper type needed to have polymorphic lists of elements
 data IElement =
    IEClafer IClafer
  | IEConstraint {
-    constraintParent :: Maybe IClafer,-- Nothing => TopLevel, Just x => x is the parent of this constraint
-    isHard :: Bool,                   -- whether hard or not (soft)
-    cpexp :: PExp                     -- the expression
+      -- | Nothing => TopLevel, Just x => x is the parent of this constraint
+      constraintParent :: Maybe IClafer,
+      -- | whether hard or not (soft)
+      isHard :: Bool,     
+      -- | the container of the actual expression
+      cpexp :: PExp       
     }
+  -- | Goal (optimization objective)
  | IEGoal {
-    goalParent :: Maybe IClafer,-- Nothing => TopLevel, Just x => x is the parent of this goal
-    isMaximize :: Bool,         -- whether maximize or minimize
-    cpexp :: PExp               -- the expression
+    -- | Nothing => TopLevel, Just x => x is the parent of this goal
+    goalParent :: Maybe IClafer,
+    -- | whether maximize or minimize
+    isMaximize :: Bool,         
+    -- | the expression
+    cpexp :: PExp               
    }
 
 data ElementInstance = ElementInstance Bool PExp deriving (Eq, Ord)
@@ -145,8 +171,8 @@ instance Show IElement where
         ++ " isMaximize = " ++ show b ++ " cpexp = " ++ show p
 
 
--- A list of superclafers.  
--- :    -- non overlapping (disjoint)
+-- |A list of superclafers.  
+--  :    -- non overlapping (disjoint)
 data ISuper =
    ISuper {
       iSuperParent :: IClafer, 
@@ -190,6 +216,7 @@ getReDefClafer :: IClafer -> IClafer
 getReDefClafer (IClafer{super = ISuper{superKind = Redefinition i}}) = i
 getReDefClafer _ = error "Tried to get redefintion clafer from a clafer that is not redefined"
 
+-- | A list of reference types
 -- ->   -- overlapping unique (set) [isSet=True]
 -- ->>  -- overlapping non-unique (bag) [isSet=False]
 data IReference = 
@@ -219,9 +246,9 @@ isOverlapping :: IClafer -> Bool
 isOverlapping = ([]/=) . refs . reference
 
 
--- Group cardinality is specified as an interval. It may also be given by a keyword.
--- xor  -- 1..1 isKeyword = True
--- 1..1 -- 1..1 isKeyword = False
+-- | Group cardinality is specified as an interval. It may also be given by a keyword.
+--   xor    1..1 isKeyword = True
+--   1..1   1..1 isKeyword = False
 data IGCard =
   IGCard {
       isKeyword :: Bool,    -- whether given by keyword: or, xor, mux
@@ -229,16 +256,22 @@ data IGCard =
     }
   deriving (Eq,Ord,Show)
 
--- (Min, Max) integer interval. -1 denotes *
+-- | (Min, Max) integer interval. -1 denotes *
 type Interval = (Integer, Integer)
 
--- This is expression container (parent). It has meta information about an actual expression 'exp'
+-- | This is expression container (parent). 
+--   It has meta information about an actual expression 'exp'
 data PExp = PExp {
-      pExpParent :: Maybe PExp, -- Nothing => TopLevel, Just x => x is the parent of this PExp
+      -- | Nothing => TopLevel, Just x => x is the parent of this PExp
+      pExpParent :: Maybe PExp, 
+      -- | the inferred type
       iType :: Maybe IType,  
-      pid :: String,            -- non-empy unique id for expressions with span, "" for noSpan
-      inPos :: Span,            -- position in the input Clafer file
-      exp :: IExp               -- the actual expression
+      -- | non-empty unique id for expressions with span, \"\" for noSpan
+      pid :: String,         
+      -- | position in the input Clafer file
+      inPos :: Span,         
+      -- | the actual expression
+      exp :: IExp            
     }
 
 data PExpInstance = PExpInstance (Maybe IType) String Span IExp 
@@ -267,78 +300,95 @@ getPExpName PExp{exp = IInt i} = show i
 getPExpName PExp{exp = IDouble d} = show d
 getPExpName PExp{exp = IStr s} = s
 
+
 data IExp = 
-   -- quantified expression with declarations
-   -- e.g., [ all x1; x2 : X | x1.ref != x2.ref ]
+   -- | quantified expression with declarations
+   --   e.g., [ all x1; x2 : X | x1.ref != x2.ref ]
    IDeclPExp {quant :: IQuant, oDecls :: [IDecl], bpexp :: PExp}
-   -- expression with a
-   -- unary function, e.g., -1
-   -- binary function, e.g., 2 + 3
-   -- ternary function, e.g., if x then 4 else 5
+   -- | expression with a
+   --   unary function, e.g., -1
+   --   binary function, e.g., 2 + 3
+   --   ternary function, e.g., if x then 4 else 5
  | IFunExp {op :: String, exps :: [PExp]}
- | IInt Integer                  -- integer number
- | IDouble Double                -- real number
- | IStr String                   -- string
- | IClaferId {                   -- clafer name
-      modName :: String,         -- module name - currently not used and empty since we have no module system
-      sident :: String,          -- name of the clafer being referred to
-      isTop :: Bool              -- identifier refers to a top-level definition
+ -- | integer number
+ | IInt Integer
+ -- | real number
+ | IDouble Double
+ -- | string
+ | IStr String
+ -- | a reference to a clafer name
+ | IClaferId {                   
+      -- | module name - currently not used and empty since we have no module system
+      modName :: String,         
+      -- | name of the clafer being referred to
+      sident :: CName,          
+      -- | identifier refers to a top-level definition
+      isTop :: Bool
     }
   deriving (Eq,Ord,Show)
 
-{-
+{- |
 For IFunExp standard set of operators includes:
 1. Unary operators:
-        !          -- not (logical)
-        #          -- set counting operator
-        -          -- negation (arithmetic)
-        max        -- maximum (created for goals)
-        min        -- minimum (created for goals)
+        !          - not (logical)
+        #          - set counting operator
+        -          - negation (arithmetic)
+        max        - maximum (created for goals)
+        min        - minimum (created for goals)
 2. Binary operators:
-        <=>        -- equivalence
-        =>         -- implication
-        ||         -- disjunction
-        xor        -- exclusive or
-        &&         -- conjunction
-        <          -- less than
-        >          -- greater than
-        =          -- equality
-        <=         -- less than or equal
-        >=         -- greater than or equal
-        !=         -- inequality
-        in         -- belonging to a set/being a subset
-        nin        -- not belonging to a set/not being a subset
-        +          -- addition/string concatenation
-        -          -- substraction
-        *          -- multiplication
-        /          -- division
-        ++         -- set union
-        --         -- set difference
-        &          -- set intersection
-        <:         -- domain restriction
-        :>         -- range restriction
-        .          -- relational join
+        \<=\>        - equivalence
+        =\>         - implication
+        ||         - disjunction
+        xor        - exclusive or
+        &&         - conjunction
+        \<          - less than
+        \>          - greater than
+        =          - equality
+        \<=         - less than or equal
+        \>=         - greater than or equal
+        !=         - inequality
+        in         - belonging to a set/being a subset
+        nin        - not belonging to a set/not being a subset
+        +          - addition/string concatenation
+        -          - substraction
+        *          - multiplication
+        /          - division
+        ++         - set union
+        \-\-         - set difference
+        &          - set intersection
+        \<:         - domain restriction
+        :\>         - range restriction
+        .          - relational join
 3. Ternary operators
         ifthenelse -- if then else
 -}
 
--- Local declaration
--- disj x1; x2 : X ++ Y
--- y1 : Y 
+-- | Local declaration
+--   disj x1; x2 : X ++ Y
+--   y1 : Y 
 data IDecl =
    IDecl {
-      isDisj :: Bool,     -- is disjunct
-      decls :: [String],  -- a list of local names
-      body :: PExp        -- set to which local names refer to
+      -- | is disjunct
+      isDisj :: Bool,    
+      -- | a list of local names 
+      decls :: [CName],  
+      -- | set to which local names refer to
+      body :: PExp        
     }
   deriving (Eq,Ord,Show)
 
+-- | quantifier
 data IQuant =
-   INo    -- does not exist
- | ILone  -- less than one
- | IOne   -- exactly one
- | ISome  -- at least one (i.e., exists)
- | IAll   -- for all
+ -- | does not exist
+   INo    
+ -- | less than one
+ | ILone  
+ -- | exactly one
+ | IOne   
+ -- | at least one (i.e., exists)
+ | ISome  
+ -- | for all
+ | IAll   
   deriving (Eq,Ord,Show)
 
 type LineNo = Integer
@@ -348,6 +398,7 @@ type ColNo  = Integer
 {-Ir Traverse Functions-}
 -------------------------
 
+-- | map over IR
 mapIR :: (Ir -> Ir) -> IModule -> IModule -- fmap/map for IModule
 mapIR f (IModule name decls') = 
   unWrapIModule $ f $ IRIModule $ IModule name $ map (unWrapIElement . iMap f . IRIElement) decls'
@@ -355,10 +406,12 @@ mapIR f (IModule name decls') =
 forIR :: IModule -> (Ir -> Ir) -> IModule -- mapIR with arguments fliped
 forIR = flip mapIR
 
+-- | foldMap over IR
 foldMapIR :: (Monoid m) => (Ir -> m) -> IModule -> m -- foldMap for IModule
 foldMapIR f i@(IModule _ decls') = 
   (f $ IRIModule i) `mappend` foldMap (iFoldMap f . IRIElement) decls'
 
+-- | fold the IR
 foldIR :: (Ir -> a -> a) -> a -> IModule -> a -- a basic fold for IModule
 foldIR f e m = appEndo (foldMapIR (Endo . f) m) e
 
