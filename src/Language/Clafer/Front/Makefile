@@ -3,18 +3,18 @@ define apPatch
 endef
 
 all:
-	$(MAKE) -C lbnf
-	./lbnf/Rewrite clafer-orig.cf > clafer.cf
-	bnfc clafer.cf
+	#$(MAKE) -C lbnf
+	#./lbnf/Rewrite cafer-orig.cf > clafer.cf
+	bnfc  clafer.cf
 	patch Parclafer.y Parclafer.y.diff
+	patch Lexclafer.x Lexclafer.x.diff
 	happy -gca Parclafer.y
 	alex -g Lexclafer.x
 #	latex Docclafer.tex; dvips Docclafer.dvi -o Docclafer.ps
 	patch Absclafer.hs Absclafer.diff
 	patch ErrM.hs ErrM.diff
-	patch Lexclafer.hs Lexclafer.diff
 	patch Printclafer.hs Printclafer.diff
-	patch Parclafer.hs Parclafer.diff
+# patch Parclafer.hs Parclafer.diff
 #	$(foreach file, Absclafer ErrM Lexclafer Printclafer Parclafer, \
 #		$(if $(call apPatch,--dry-run,$(file)), \
 #			$(call apPatch,,$(file))))

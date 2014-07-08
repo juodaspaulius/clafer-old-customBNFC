@@ -32,6 +32,8 @@ import Language.ClaferT
 import Language.Clafer.Front.Lexclafer
 import Data.Maybe
 
+import Debug.Trace
+
 data LayEnv = LayEnv {
       level :: Int,
       levels :: [Int],
@@ -64,7 +66,9 @@ layoutClose :: String
 layoutClose = "}"
 
 resolveLayout :: (Monad m) => [Token] -> ClaferT m  [Token]
-resolveLayout xs = addNewLines xs >>= (resolve (LEnv [1] Nothing)) >>= adjust
+resolveLayout xs = {- trace ("\nInput:\n" ++ show xs) $ -} addNewLines xs >>= (resolve (LEnv [1] Nothing)) >>= adjust >>= traceLayout
+
+traceLayout xs = {- trace ("\nOutput:\n" ++ (show xs)) $ -} return xs
 
 resolve :: (Monad m) => LEnv -> [ExToken] -> ClaferT m [Token]
 resolve (LEnv st _) [] = return $ replicate (length st - 1) dedent
@@ -93,7 +97,7 @@ resolve env@(LEnv st lastNl) (t:ts)
 indent :: Token
 indent = PT (Pn 0 0 0) (TS "{" $ tokenLookup "{")
 dedent :: Token
-dedent = PT (Pn 0 0 0) (TS "}" $ tokenLookup "}") 
+dedent = PT (Pn 0 0 0) (TS "}" $ tokenLookup "}")
 
 toToken :: ExToken -> [Token]
 toToken (NewLine _) = []
@@ -154,7 +158,7 @@ tokenLookup s = i
       "<" -> 23
       "<:" -> 24
       "<<" -> 25
-      "<=" -> 26      
+      "<=" -> 26
       "<=>" -> 27
       "=" -> 28
       "=>" -> 29
@@ -183,7 +187,7 @@ tokenLookup s = i
       "opt" -> 52
       "or" -> 53
       "some" -> 54
-      "sum" -> 55       
+      "sum" -> 55
       "then" -> 56
       "xor" -> 57
       "{" -> 58
@@ -249,9 +253,9 @@ addNewLines' n (t0:t1:ts)
   | isLayoutOpen t1  || isBracketOpen t1 =
     addNewLines' (n + 1) (t1:ts) >>= (return . (ExToken t0:))
   | isLayoutClose t1 || isBracketClose t1 =
-    addNewLines' (n - 1) (t1:ts) >>= (return . (ExToken t0:)) 
-  | isNewLine t0 t1  = addNewLines' n (t1:ts) >>= (return . (ExToken t0:) . (NewLine (column t1, n):)) 
-  | otherwise        = addNewLines' n (t1:ts) >>= (return . (ExToken t0:)) 
+    addNewLines' (n - 1) (t1:ts) >>= (return . (ExToken t0:))
+  | isNewLine t0 t1  = addNewLines' n (t1:ts) >>= (return . (ExToken t0:) . (NewLine (column t1, n):))
+  | otherwise        = addNewLines' n (t1:ts) >>= (return . (ExToken t0:))
 addNewLines' _ _ = throwErr (ClaferErr "Function addNewLines' from LayoutResolver was given invalid arguments" :: CErr Span) -- This should never happen!
 
 
@@ -267,8 +271,8 @@ updToken (t0:t1:ts)
   where
   sym = if isLayoutOpen t1 then "{" else "}"
   -- | Get the position immediately to the right of the given token.
-  nextPos :: Token -> Position 
-  nextPos t = Pn (g + s) l (c + s + 1) 
+  nextPos :: Token -> Position
+  nextPos t = Pn (g + s) l (c + s + 1)
     where Pn g l c = position t
           s = tokenLength t
 updToken [] = return []
@@ -288,7 +292,7 @@ addToken p@(Pn z x y) s ts = do
     i = tokenLookup s
 
 resLayout :: String -> String
-resLayout input' = 
+resLayout input' =
   reverse $ output $ execState resolveLayout' $ LayEnv 0 [] input'' [] 0
   where
   input'' = unlines $ filter (/= "") $ lines input'
@@ -347,7 +351,7 @@ eatSpaces = do
 
 emitIndent :: MonadState LayEnv m => Int -> m ()
 emitIndent n = do
-  lev <- gets level  
+  lev <- gets level
   when (n > lev) $ do
     ctr <- gets brCtr
     when (ctr < 1) $ do
@@ -376,7 +380,7 @@ getc = do
   return c
 
 revertLayout :: String -> String
-revertLayout input' = unlines $ revertLayout' (lines input') 0 
+revertLayout input' = unlines $ revertLayout' (lines input') 0
 
 revertLayout' :: [String] -> Int -> [String]
 revertLayout' []             _ = []

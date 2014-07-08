@@ -119,12 +119,12 @@ genXmlElement x = case x of
   IEConstraint isHard' pexp  -> tagType "Declaration" "IConstraint" $ concat
                          [ genXmlBoolean "IsHard" isHard'
                          , genXmlPExp "ParentExp" pexp]
-  IEGoal isMaximize' pexp -> tagType "Declaration" "IGoal" $ concat 
+  IEGoal isMaximize' pexp -> tagType "Declaration" "IGoal" $ concat
                          [ genXmlBoolean "IsMaximize" isMaximize'
                          , genXmlPExp "ParentExp" pexp]
-                         
 
-genXmlAnyOp :: (a -> String) -> (a -> String) -> [(String, a)] -> String                                                    
+
+genXmlAnyOp :: (a -> String) -> (a -> String) -> [(String, a)] -> String
 genXmlAnyOp ft f xs = concatMap
   (\(tname, texp) -> tagType tname (ft texp) $ f texp) xs
 
@@ -139,9 +139,6 @@ genXmlPosition :: Span -> String
 genXmlPosition (Span (Pos s1 s2) (Pos e1 e2)) = concat
   [ tag "Start" $ genXmlIntPair (s1, s2)
   , tag "End"   $ genXmlIntPair (e1, e2)]
-genXmlPosition (PosSpan _ s e) = genXmlPosition (Span s e)
-genXmlPosition (Span (PosPos _ s1 s2) e) = genXmlPosition (Span (Pos s1 s2) e)
-genXmlPosition (Span s (PosPos _ e1 e2)) = genXmlPosition (Span s (Pos e1 e2))
 
 genXmlIExpType :: IExp -> String
 genXmlIExpType x = case x of
@@ -170,7 +167,7 @@ genXmlIExp x = case x of
     escape y    = [y]
   IInt n -> genXmlInteger n
   IDouble n -> tag "DoubleLiteral" $ show n
-  IStr str -> genXmlString str  
+  IStr str -> genXmlString str
   IClaferId modName' sident' isTop' -> concat
     [ tag "ModuleName" modName'
     , tag "Id" sident'

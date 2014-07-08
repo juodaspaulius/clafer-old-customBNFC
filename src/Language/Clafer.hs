@@ -101,7 +101,7 @@ import Data.Ord
 import Control.Monad
 import System.FilePath (takeBaseName)
 
-import Language.ClaferT 
+import Language.ClaferT
 import Language.Clafer.Common
 import Language.Clafer.Front.ErrM
 import Language.Clafer.ClaferArgs hiding (Clafer)
@@ -111,9 +111,8 @@ import qualified Language.Clafer.Css as Css
 import Language.Clafer.Front.Lexclafer
 import Language.Clafer.Front.Parclafer
 import Language.Clafer.Front.Printclafer
-import Language.Clafer.Front.Absclafer 
+import Language.Clafer.Front.Absclafer
 import Language.Clafer.Front.LayoutResolver
-import Language.Clafer.Front.Mapper
 import Language.Clafer.Intermediate.Tracing
 import Language.Clafer.Intermediate.Intclafer
 import Language.Clafer.Intermediate.Desugarer
@@ -130,6 +129,8 @@ import Language.Clafer.Generator.Schema
 import Language.Clafer.Generator.Stats
 import Language.Clafer.Generator.Html
 import Language.Clafer.Generator.Graph
+
+import Debug.Trace
 
 type VerbosityL = Int
 type InputModel = String
@@ -161,7 +162,7 @@ addModuleFragment i =
           "" -> []
           ('\n' : r) -> lines' r
           x -> error $ "linesing " ++ x -- How can it be nonempty and not start with a newline after the break? Should never happen.
-      
+
 -- | Converts the Err monads (created by the BNFC parser generator) to ClaferT
 liftParseErrs :: Monad m => [Err a] -> ClaferT m [a]
 liftParseErrs e =
@@ -177,7 +178,7 @@ liftParseErrs e =
       -- Bad maps to ParseErr
       return $ Left $ ParseErr (ErrFragPos frgId p) s
 
--- | Converts one Err. liftParseErrs is better if you want to report multiple errors. 
+-- | Converts one Err. liftParseErrs is better if you want to report multiple errors.
 -- | This method will only report one before ceasing execution.
 liftParseErr :: Monad m => Err a -> ClaferT m a
 liftParseErr e = head `liftM` liftParseErrs [e]
@@ -208,40 +209,40 @@ parse =
     --
     -- The second one is easier so that's we'll do for now. There shouldn't be any errors since
     -- each individual fragment already passed.
-    ast' <- case asts of
+    ast <- case asts of
       -- Special case: if there is only one fragment, then the complete model is contained within it.
       -- Don't need to reparse. This is the common case.
-      [oneFrag] -> return oneFrag
+      [oneFrag] -> {- trace ("AST:\n" ++ show oneFrag) $ -} return oneFrag
       _ -> do
         -- Combine all the fragment syntaxes
         let completeModel = concat $ modelFrags env
         completeAst <- (parseFrag $ args env) completeModel
         liftParseErr completeAst
 
-    
-    let ast = mapModule ast'
+    -- No need to map AST to Positional AST
+    -- let ast = mapModule ast'
     let env' = env{ cAst = Just ast, astModuleTrace = traceAstModule ast }
     putEnv env'
   where
   parseFrag :: (Monad m) => ClaferArgs -> String -> ClaferT m (Err Module)
   parseFrag args' =
     (>>= (return . pModule)) .
-    (if not 
+    (if not
       ((new_layout args') ||
       (no_layout args'))
-    then 
-       resolveLayout 
-    else 
-       return) 
+    then
+       resolveLayout
+    else
+       return)
     . myLexer .
     (if (not $ no_layout args') &&
         (new_layout args')
-     then 
-       resLayout 
-     else 
+     then
+       resLayout
+     else
        id)
 
--- | Compiles the AST into IR.    
+-- | Compiles the AST into IR.
 compile :: Monad m => ClaferT m ()
 compile =
   do
@@ -259,15 +260,9 @@ compile =
     where
       isKeyWord :: Ir -> String
       isKeyWord (IRClafer IClafer{_cinPos = (Span (Pos l c) _) ,_ident=i}) = if (i `elem` keyWords) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
-      isKeyWord (IRClafer IClafer{_cinPos = (PosSpan _ (Pos l c) _) ,_ident=i}) = if (i `elem` keyWords) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
-      isKeyWord (IRClafer IClafer{_cinPos = (Span (PosPos _ l c) _) ,_ident=i}) = if (i `elem` keyWords) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
-      isKeyWord (IRClafer IClafer{_cinPos = (PosSpan _ (PosPos _ l c) _) ,_ident=i}) = if (i `elem` keyWords) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
       isKeyWord _ = ""
       gt1 :: Ir -> String
       gt1 (IRClafer (IClafer (Span (Pos l c) _) False _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
-      gt1 (IRClafer (IClafer (Span (PosPos _ l c) _) False _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else "" 
-      gt1 (IRClafer (IClafer (PosSpan _ (Pos l c) _) False _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
-      gt1 (IRClafer (IClafer (PosSpan _ (PosPos _ l c) _) False _ _ _ _ (Just (_, m)) _ _)) = if (m > 1 || m < 0) then ("Line " ++ show l ++ " column " ++ show c ++ "\n") else ""
       gt1 _ = ""
 
 -- | Splits the IR into their fragments, and generates the output for each fragment.
@@ -279,15 +274,15 @@ generateFragments =
     env <- getEnv
     (iModule, _, _) <- getIr
     fragElems <- fragment (sortBy (comparing rnge) $ _mDecls iModule) (frags env)
-    
+
     -- Assumes output mode is Alloy for now
-    
+
     return $ map (generateFragment $ args env) fragElems
   where
   rnge (IEClafer IClafer{_cinPos = p}) = p
   rnge IEConstraint{_cpexp = PExp{_inPos = p}} = p
   rnge IEGoal{_cpexp = PExp{_inPos = p}} = p
-  
+
   -- Groups IElements by their fragments.
   --   elems must be sorted by range.
   fragment :: (Monad m) => [IElement] -> [Pos] -> ClaferT m [[IElement]]
@@ -297,11 +292,10 @@ generateFragments =
     where
     (curFrag, restFrags) = span (`beforePos` frag) elems
   fragment _ [] = throwErr $ (ClaferErr $ "Unexpected fragment." :: CErr Span) -- Should not happen. Bug.
-  
+
   beforePos ele p =
     case rnge ele of
       Span _ e -> e <= p
-      PosSpan _ _ e -> e <= p
   generateFragment :: ClaferArgs -> [IElement] -> String
   generateFragment args' frag =
     flatten $ cconcat $ map (genDeclaration args') frag
@@ -309,7 +303,7 @@ generateFragments =
 -- | Splits the AST into their fragments, and generates the output for each fragment.
 generateHtml :: ClaferEnv -> Module -> String
 generateHtml env ast' =
-    let PosModule _ decls' = ast';
+    let Module _ decls' = ast';
         cargs = args env;
         irMap = irModuleTrace env;
         comments = if add_comments cargs then getComments $ unlines $ modelFrags env else [];
@@ -318,25 +312,23 @@ generateHtml env ast' =
        (if (self_contained cargs) then "</body>\n</html>" else "")
 
   where
-    lne (PosElementDecl (Span p _) _) = p
-    lne (PosEnumDecl (Span p _) _  _) = p
+    lne (ElementDecl (Span p _) _) = p
+    lne (EnumDecl (Span p _) _  _) = p
     lne _                               = Pos 0 0
     genFragments :: [Declaration] -> [Pos] -> Map.Map Span [Ir] -> [(Span, String)] -> [String]
     genFragments []           _            _     comments = printComments comments
-    genFragments (decl:decls') []           irMap comments = let (comments', c) = printPreComment (range decl) comments in
+    genFragments (decl:decls') []           irMap comments = let (comments', c) = printPreComment (getSpan decl) comments in
                                                                    [c] ++ (cleanOutput $ revertLayout $ printDeclaration decl 0 irMap True $ inDecl decl comments') : (genFragments decls' [] irMap $ afterDecl decl comments)
     genFragments (decl:decls') (frg:frgs) irMap comments = if lne decl < frg
-                                                                 then let (comments', c) = printPreComment (range decl) comments in
+                                                                 then let (comments', c) = printPreComment (getSpan decl) comments in
                                                                    [c] ++ (cleanOutput $ revertLayout $ printDeclaration decl 0 irMap True $ inDecl decl comments') : (genFragments decls' (frg:frgs) irMap $ afterDecl decl comments)
                                                                  else "<!-- # FRAGMENT /-->" : genFragments (decl:decls') frgs irMap comments
     inDecl :: Declaration -> [(Span, String)] -> [(Span, String)]
     inDecl decl comments = let s = rnge decl in dropWhile (\x -> fst x < s) comments
     afterDecl :: Declaration -> [(Span, String)] -> [(Span, String)]
     afterDecl decl comments = let (Span _ (Pos line' _)) = rnge decl in dropWhile (\(x, _) -> let (Span _ (Pos line'' _)) = x in line'' <= line') comments
-    rnge (EnumDecl _ _) = noSpan
-    rnge (PosEnumDecl s _ _) = s
-    rnge (ElementDecl _) = noSpan
-    rnge (PosElementDecl s _) = s
+    rnge (EnumDecl s _ _) = s
+    rnge (ElementDecl s _) = s
     printComments [] = []
     printComments ((s, comment):cs) = (snd (printComment s [(s, comment)]) ++ "<br>\n"):printComments cs
 
@@ -347,23 +339,23 @@ generate =
     env <- getEnv
     ast' <- getAst
     (iModule, genv, au) <- getIr
-    let 
+    let
       cargs = args env
       stats = showStats au $ statsModule iModule
       modes = mode cargs
       scopes = getScopeStrategy (scope_strategy cargs) iModule
-    return $ Map.fromList ( 
+    return $ Map.fromList (
         -- result for Alloy
         (if (Alloy `elem` modes)
-          then let 
+          then let
                   (imod,strMap) = astrModule iModule
                   alloyCode = genModule cargs{mode = [Alloy]} (imod, genv) scopes
-                  addCommentStats = if no_stats cargs then const else addStats 
-               in 
-                  [ (Alloy, 
-                    CompilerResult { 
-                     extension = "als", 
-                     outputCode = addCommentStats (fst alloyCode) stats, 
+                  addCommentStats = if no_stats cargs then const else addStats
+               in
+                  [ (Alloy,
+                    CompilerResult {
+                     extension = "als",
+                     outputCode = addCommentStats (fst alloyCode) stats,
                      statistics = stats,
                      claferEnv  = env,
                      mappingToAlloy = fromMaybe [] (Just $ snd alloyCode),
@@ -372,19 +364,19 @@ generate =
                     })
                   ]
           else []
-        ) 
+        )
         ++
         -- result for Alloy42
         (if (Alloy42 `elem` modes)
-          then let 
+          then let
                   (imod,strMap) = astrModule iModule
                   alloyCode = genModule cargs{mode = [Alloy42]} (imod, genv) scopes
-                  addCommentStats = if no_stats cargs then const else addStats 
-               in 
-                  [ (Alloy42, 
-                    CompilerResult { 
-                     extension = "als4", 
-                     outputCode = addCommentStats (fst alloyCode) stats, 
+                  addCommentStats = if no_stats cargs then const else addStats
+               in
+                  [ (Alloy42,
+                    CompilerResult {
+                     extension = "als4",
+                     outputCode = addCommentStats (fst alloyCode) stats,
                      statistics = stats,
                      claferEnv  = env,
                      mappingToAlloy = fromMaybe [] (Just $ snd alloyCode),
@@ -393,13 +385,13 @@ generate =
                     })
                   ]
           else []
-        )   
-        -- result for XML    
+        )
+        -- result for XML
         ++ (if (Xml `elem` modes)
           then [ (Xml,
-                  CompilerResult { 
-                   extension = "xml", 
-                   outputCode = genXmlModule iModule, 
+                  CompilerResult {
+                   extension = "xml",
+                   outputCode = genXmlModule iModule,
                    statistics = stats,
                    claferEnv  = env,
                    mappingToAlloy = [],
@@ -411,9 +403,9 @@ generate =
         -- result for Clafer
         ++ (if (Mode.Clafer `elem` modes)
           then [ (Mode.Clafer,
-                  CompilerResult { 
-                   extension = "des.cfr", 
-                   outputCode = printTree $ sugarModule iModule, 
+                  CompilerResult {
+                   extension = "des.cfr",
+                   outputCode = printTree $ sugarModule iModule,
                    statistics = stats,
                    claferEnv  = env,
                    mappingToAlloy = [],
@@ -422,12 +414,12 @@ generate =
                   }) ]
           else []
         )
-        -- result for Html    
+        -- result for Html
         ++ (if (Html `elem` modes)
           then [ (Html,
-                  CompilerResult { 
-                   extension = "html", 
-                   outputCode = generateHtml env ast', 
+                  CompilerResult {
+                   extension = "html",
+                   outputCode = generateHtml env ast',
                    statistics = stats,
                    claferEnv  = env,
                    mappingToAlloy = [],
@@ -438,9 +430,9 @@ generate =
         )
         ++ (if (Graph `elem` modes)
           then [ (Graph,
-                  CompilerResult { 
-                     extension = "dot", 
-                     outputCode = genSimpleGraph ast' iModule (takeBaseName $ file cargs) (show_references cargs), 
+                  CompilerResult {
+                     extension = "dot",
+                     outputCode = genSimpleGraph ast' iModule (takeBaseName $ file cargs) (show_references cargs),
                      statistics = stats,
                      claferEnv  = env,
                      mappingToAlloy = [],
@@ -451,9 +443,9 @@ generate =
         )
         ++ (if (CVLGraph `elem` modes)
           then [ (CVLGraph,
-                  CompilerResult { 
-                       extension = "cvl.dot", 
-                       outputCode = genCVLGraph ast' iModule (takeBaseName $ file cargs), 
+                  CompilerResult {
+                       extension = "cvl.dot",
+                       outputCode = genCVLGraph ast' iModule (takeBaseName $ file cargs),
                        statistics = stats,
                        claferEnv  = env,
                        mappingToAlloy = [],
@@ -462,11 +454,11 @@ generate =
                   }) ]
           else []
         )
-        -- result for Python    
+        -- result for Python
         ++ (if (Python `elem` modes)
-          then [ (Python, 
-                  CompilerResult { 
-                   extension = "py", 
+          then [ (Python,
+                  CompilerResult {
+                   extension = "py",
                    outputCode = genPythonModule iModule,
                    statistics = stats,
                    claferEnv  = env,
@@ -476,15 +468,15 @@ generate =
                   }) ]
           else []
         )
-        -- result for Choco    
+        -- result for Choco
         ++ (if (Choco `elem` modes)
-          then let 
+          then let
                   (imod,strMap) = astrModule iModule
                in
-                  [ (Choco, 
-                     CompilerResult { 
-                         extension = "js", 
-                         outputCode = genCModule cargs (imod, genv) scopes, 
+                  [ (Choco,
+                     CompilerResult {
+                         extension = "js",
+                         outputCode = genCModule cargs (imod, genv) scopes,
                          statistics = stats,
                          claferEnv  = env,
                          mappingToAlloy = [],
@@ -493,25 +485,25 @@ generate =
                       }) ]
           else []
         ))
-    
+
 -- | Result of generation for a given mode
 data CompilerResult = CompilerResult {
                             -- | output file extension
-                            extension :: String, 
+                            extension :: String,
                             -- | output text
-                            outputCode :: String, 
+                            outputCode :: String,
                             statistics :: String,
                             -- | the final environment of the compiler
                             claferEnv :: ClaferEnv,
                             -- | Maps source constraint spans in Alloy to the spans in the IR
-                            mappingToAlloy :: [(Span, IrTrace)], 
+                            mappingToAlloy :: [(Span, IrTrace)],
                             -- | Map back from Ints used to represent Strings
                             stringMap :: (Map.Map Int String),
                             -- | scopes generated by scope inference
                             scopesList :: [(UID, Integer)]
                             } deriving Show
 
-desugar :: Module -> IModule  
+desugar :: Module -> IModule
 desugar iModule = desugarModule iModule
 
 liftError :: (Monad m, Language.ClaferT.Throwable t) => Either t a -> ClaferT m a
@@ -520,7 +512,7 @@ liftError = either throwErr return
 analyze :: Monad m => ClaferArgs -> IModule -> ClaferT m (IModule, GEnv, Bool)
 analyze args' iModule = do
   liftError $ findDupModule args' iModule
-  let 
+  let
     au = allUnique iModule
   let args'' = args'{skip_resolver = au && (skip_resolver args')}
   (rTree, genv) <- liftError $ resolveModule args'' iModule
@@ -533,7 +525,7 @@ addStats code stats = "/*\n" ++ stats ++ "*/\n" ++ code
 showStats :: Bool -> Stats -> String
 showStats au (Stats na nr nc nconst ngoals sgl) =
   unlines [ "All clafers: " ++ (show (na + nr + nc)) ++ " | Abstract: " ++ (show na) ++ " | Concrete: " ++ (show nc) ++ " | References: " ++ (show nr)          , "Constraints: " ++ show nconst
-          , "Goals: " ++ show ngoals  
+          , "Goals: " ++ show ngoals
           , "Global scope: " ++ showInterval sgl
           , "Can skip resolver: " ++ show au]
 
