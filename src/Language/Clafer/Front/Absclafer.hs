@@ -19,6 +19,10 @@ noSpan = Span noPos noPos
 class Spannable n where
   getSpan :: n -> Span
 
+instance Spannable n => Spannable [n] where
+  getSpan (x:xs) = foldr (\item acc -> getSpan item >- acc ) (getSpan x) xs
+  getSpan [] = noSpan
+
 (>-) :: Span -> Span -> Span
 (>-) (Span (Pos 0 0) (Pos 0 0)) s = s
 (>-) r (Span (Pos 0 0) (Pos 0 0)) = r
@@ -196,10 +200,6 @@ data ModId =
 data LocId =
    LocIdIdent Span PosIdent
   deriving (Eq,Ord,Show,Read)
-
-instance Spannable n => Spannable [n] where
-  getSpan (x:xs) = foldr (\item acc -> getSpan item >- acc ) (getSpan x) xs
-  getSpan [] = noSpan
 
 instance Spannable Module where
   getSpan ( Module s _ ) = s

@@ -12,7 +12,7 @@ import Control.Monad (MonadPlus(..), liftM)
 import Control.Applicative (Applicative(..), Alternative(..))
 
 data Err a = Ok a | Bad Pos String
-  deriving (Show, Eq, Ord)
+  deriving (Read, Show, Eq, Ord)
 
 instance Monad Err where
   return      = Ok

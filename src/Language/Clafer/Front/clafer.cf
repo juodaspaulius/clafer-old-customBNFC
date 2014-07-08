@@ -17,7 +17,7 @@ EnumDecl.       Declaration ::= "enum" PosIdent "=" [EnumId] ;
 ElementDecl.    Declaration ::= Element ;
 
 Clafer.         Clafer ::= Abstract GCard PosIdent Super Card Init Elements ;
-Constraint.     Constraint ::= "[" [ConstraintExp] "]" ;
+Constraint.     Constraint ::= "[" [Exp] "]" ;
 SoftConstraint. SoftConstraint ::= "(" [Exp] ")";
 Goal.   	Goal ::= "<<" [Exp] ">>" ;
 
@@ -69,24 +69,6 @@ ExIntegerNum.   ExInteger ::= PosInteger ;
 
 Path.           Name ::= [ModId] ;
 
-Before.         PatternBase ::= Exp "before" Exp;
-After.          PatternBase ::= Exp "after" Exp;
-PatternExp.     PatternBase ::= Exp ;
-
-PatternBetween.  ConstraintExp ::= PatternBase "between" Exp "and" Exp ;
-PatternUntil.    ConstraiptExp ::= PatternBase "after" Exp "until" Exp ;
-PatternNoScope.  ConstraintExp ::= PatternBase ;
-
-GloballyExp.    ConstraintExp ::= "Globally" Exp ;
-InitiallyExp.   ConstraintExp ::= "Initially" Exp ;
-FinallyExp.     ConstraintExp ::= "Finally" Exp ;
-
-FinalClafer.    ConstraintExp ::= "final" ;
-
-
-
--- LTL precedence order: <AP>, !, X, G, F, W, U, R, &&, ||, => 
-
 DeclAllDisj.    Exp   ::= "all" "disj" Decl "|" Exp ;
 DeclAll.        Exp   ::= "all"        Decl "|" Exp ;
 DeclQuantDisj.  Exp   ::= Quant "disj" Decl "|" Exp ;
@@ -98,36 +80,28 @@ EImplies.       Exp2  ::= Exp2 "=>"  Exp3 ;
 EOr.            Exp3  ::= Exp3 "||"  Exp4 ;
 EXor.           Exp4  ::= Exp4 "xor" Exp5 ;
 EAnd.           Exp5  ::= Exp5 "&&"  Exp6 ;
-LtlU.           Exp6  ::= Exp6 "U"  Exp7 ;
-LtlUntil.       Exp6  ::= Exp6 "until"  Exp7 ;
-LtlW.           Exp7  ::= Exp7 "W"  Exp8 ;
-LtlWUntil.      Exp7  ::= Exp7 "weakuntil"  Exp8 ;
-LtlF.           Exp8  ::= "F"  Exp9 ;
-LtlG.           Exp9  ::= "G"  Exp10 ;
-LtlX.           Exp10  ::= "X"  Exp12 ;
-LtlNext.        Exp10  ::= "next"  Exp12 ;
-ENeg.           Exp12  ::= "!" Exp13 ;
-ELt.            Exp13  ::= Exp13 "<"  Exp14 ;
-EGt.            Exp13  ::= Exp13 ">"  Exp14 ;
-EEq.            Exp13  ::= Exp13 "="  Exp14 ;
-ELte.           Exp13  ::= Exp13 "<=" Exp14 ;
-EGte.           Exp13  ::= Exp13 ">=" Exp14 ;
-ENeq.           Exp13  ::= Exp13 "!=" Exp14 ;
-EIn.            Exp13  ::= Exp13 "in" Exp14 ;
-ENin.           Exp13  ::= Exp13 "not" "in" Exp14 ;
-QuantExp.       Exp14  ::= Quant Exp18 ;
-EAdd.           Exp15  ::= Exp15  "+" Exp16 ;
-ESub.           Exp15  ::= Exp15  "-" Exp16 ;
-EMul.           Exp16 ::= Exp16 "*" Exp17 ;
-EDiv.           Exp16 ::= Exp16 "/" Exp17 ;
-ESumSetExp.     Exp17 ::= "sum" Exp18;
-ECSetExp.       Exp17 ::= "#" Exp18 ;
-EMinExp.        Exp17 ::= "-" Exp18 ;
-EImpliesElse.   Exp18 ::= "if" Exp18 "then" Exp18 "else" Exp19 ;
-EInt.           Exp19 ::= PosInteger ;
-EDouble.        Exp19 ::= PosDouble ;
-EStr.           Exp19 ::= PosString ;
-ESetExp.        Exp19 ::= SetExp ;
+ENeg.           Exp6  ::= "!" Exp7 ;
+ELt.            Exp7  ::= Exp7 "<"  Exp8 ;
+EGt.            Exp7  ::= Exp7 ">"  Exp8 ;
+EEq.            Exp7  ::= Exp7 "="  Exp8 ;
+ELte.           Exp7  ::= Exp7 "<=" Exp8 ;
+EGte.           Exp7  ::= Exp7 ">=" Exp8 ;
+ENeq.           Exp7  ::= Exp7 "!=" Exp8 ;
+EIn.            Exp7  ::= Exp7 "in" Exp8 ;
+ENin.           Exp7  ::= Exp7 "not" "in" Exp8 ;
+QuantExp.       Exp8  ::= Quant Exp12 ;
+EAdd.           Exp9  ::= Exp9  "+" Exp10 ;
+ESub.           Exp9  ::= Exp9  "-" Exp10 ;
+EMul.           Exp10 ::= Exp10 "*" Exp11 ;
+EDiv.           Exp10 ::= Exp10 "/" Exp11 ;
+ESumSetExp.     Exp11 ::= "sum" Exp12;
+ECSetExp.       Exp11 ::= "#" Exp12 ;
+EMinExp.        Exp11 ::= "-" Exp12 ;
+EImpliesElse.   Exp12 ::= "if" Exp12 "then" Exp12 "else" Exp13 ;
+EInt.           Exp13 ::= PosInteger ;
+EDouble.        Exp13 ::= PosDouble ;
+EStr.           Exp13 ::= PosString ;
+ESetExp.        Exp13 ::= SetExp ;
 
 Union.          SetExp  ::= SetExp  "++" SetExp1 ;
 UnionCom.       SetExp  ::= SetExp  ","  SetExp1 ;
@@ -153,11 +127,10 @@ separator           Declaration ""  ;
 separator  nonempty EnumId      "|" ;
 separator           Element     ""  ;
 separator           Exp         ""  ;
-separator           ConstraintExp         ""  ;
 separator  nonempty LocId       ";" ;
 separator  nonempty ModId       "\\" ;
 
-coercions Exp 19 ;
+coercions Exp 13 ;
 coercions SetExp 6 ;
 
 position token PosInteger (digit+) ;
