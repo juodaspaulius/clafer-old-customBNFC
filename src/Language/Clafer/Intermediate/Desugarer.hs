@@ -29,11 +29,9 @@ import Language.Clafer.Common
 import Language.Clafer.Front.Absclafer
 import Language.Clafer.Intermediate.Intclafer
 
-import Debug.Trace
-
 -- | Transform the AST into the intermediate representation (IR)
 desugarModule :: Module -> IModule
-desugarModule (Module _ declarations) = {- trace ("before desugar:\n" ++ show declarations) $ -} IModule "" $
+desugarModule (Module _ declarations) = IModule "" $
       declarations >>= desugarEnums >>= desugarDeclaration
 --      [ImoduleFragment $ declarations >>= desugarEnums >>= desugarDeclaration]
 
@@ -222,7 +220,7 @@ desugarGCard x = case x of
       Just $ IGCard (isOptionalDef ncard) $ desugarNCard ncard
 
 isOptionalDef :: NCard -> Bool
-isOptionalDef (NCard _ m n) = isOptionalDef $ NCard noSpan m n
+isOptionalDef (NCard _ m n) = ((0::Integer) == mkInteger m) && (not $ isExIntegerAst n)
 
 isExIntegerAst :: ExInteger -> Bool
 isExIntegerAst (ExIntegerAst _) = True
